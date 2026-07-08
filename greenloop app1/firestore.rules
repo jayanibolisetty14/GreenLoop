@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net - default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // User document validation
+    function isValidUser(data) {
+      return data.keys().hasAll(['displayName', 'email', 'avatarUrl', 'createdAt', 'updatedAt'])
+        && data.keys().size() == 5
+        && data.displayName is string
+        && data.displayName.size() > 0
+        && data.displayName.size() <= 100
+        && data.email is string
+        && data.email.size() > 0
+        && data.email.size() <= 200
+        && data.avatarUrl is string
+        && data.avatarUrl.size() > 0
+        && data.avatarUrl.size() <= 500;
+    }
+
+    // BiomassEntry validation
+    function isValidBiomassEntry(data) {
+      return data.keys().hasAll(['category', 'weight', 'biogas', 'electricity', 'lpgOffset', 'createdAt'])
+        && data.keys().size() == 6
+        && data.category is string
+        && (data.category == 'Vegetable Waste' || data.category == 'Fruit Waste' || data.category == 'Food Waste' || data.category == 'Garden Waste' || data.category == 'Paper')
+        && data.weight is number
+        && data.weight >= 0
+        && data.weight <= 10000
+        && data.biogas is number
+        && data.biogas >= 0
+        && data.electricity is number
+        && data.electricity >= 0
+        && data.lpgOffset is number
+        && data.lpgOffset >= 0;
+    }
+
+    // Rules for User profiles
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow create: if isOwner(userId) 
+                    && isValidId(userId)
+                    && isValidUser(request.resource.data)
+                    && request.resource.data.createdAt == request.time
+                    && request.resource.data.updatedAt == request.time;
+                    
+      allow update: if isOwner(userId)
+                    && isValidId(userId)
+                    && isValidUser(request.resource.data)
+                    && request.resource.data.createdAt == resource.data.createdAt
+                    && request.resource.data.updatedAt == request.time;
+
+      allow delete: if false; // Profiles cannot be deleted from the client
+    }
+
+    // Rules for logged waste entries
+    match /users/{userId}/entries/{entryId} {
+      allow list: if isOwner(userId) && isValidId(userId);
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(entryId);
+      
+      allow create: if isOwner(userId)
+                    && isValidId(userId)
+                    && isValidId(entryId)
+                    && isValidBiomassEntry(request.resource.data)
+                    && request.resource.data.createdAt == request.time;
+
+      allow update: if isOwner(userId)
+                    && isValidId(userId)
+                    && isValidId(entryId)
+                    && isValidBiomassEntry(request.resource.data);
+
+      allow delete: if isOwner(userId) 
+                    && isValidId(userId) 
+                    && isValidId(entryId);
+    }
+  }
+}

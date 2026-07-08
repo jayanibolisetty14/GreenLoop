@@ -1,0 +1,6 @@
+{
+  "name": "GreenLoop",
+  "description": "Convert organic kitchen waste into clean biogas & electricity",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

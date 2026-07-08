@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile data including selected avatar",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string", "description": "The user's customizable name" },
+        "email": { "type": "string", "description": "Email address of the user" },
+        "avatarUrl": { "type": "string", "description": "URL or indicator of selected avatar" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["displayName", "email", "avatarUrl", "createdAt", "updatedAt"]
+    },
+    "BiomassEntry": {
+      "title": "BiomassEntry",
+      "description": "A single logged kitchen waste biomass record with calculated values",
+      "type": "object",
+      "properties": {
+        "category": { "type": "string", "enum": ["Vegetable Waste", "Fruit Waste", "Food Waste", "Garden Waste", "Paper"], "description": "The type of organic waste logged" },
+        "weight": { "type": "number", "description": "Weight in kilograms" },
+        "biogas": { "type": "number", "description": "Estimated biogas output in m³" },
+        "electricity": { "type": "number", "description": "Estimated electricity generated in kWh" },
+        "lpgOffset": { "type": "number", "description": "Estimated LPG offset in kg" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Date when logged" }
+      },
+      "required": ["category", "weight", "biogas", "electricity", "lpgOffset", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User account documents containing user metadata"
+    },
+    "/users/{userId}/entries/{entryId}": {
+      "schema": "BiomassEntry",
+      "description": "A subcollection containing historical biomass logs for a specific user"
+    }
+  }
+}
